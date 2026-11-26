@@ -1,0 +1,372 @@
+{
+  "entities": {
+    "CloudGameSave": {
+      "title": "CloudGameSave",
+      "description": "Authenticated player's cloud-persisted Neo-Pharaonic Frosthold game state using native Firestore maps and lists.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["AR", "EN"],
+          "description": "Selected UI language (AR RTL or EN LTR)."
+        },
+        "soundEnabled": {
+          "type": "boolean",
+          "description": "Whether procedural sound effects are enabled."
+        },
+        "totalPower": {
+          "type": "integer",
+          "description": "Computed Total Power score for quick profile summary."
+        },
+        "furnaceLevel": {
+          "type": "integer",
+          "description": "Solar Obelisk Furnace level (1..10)."
+        },
+        "furnaceOverdrive": {
+          "type": "boolean",
+          "description": "Whether Solar Overdrive mode is currently active."
+        },
+        "chapter": {
+          "type": "integer",
+          "description": "Current guided chapter progression number."
+        },
+        "explorationStage": {
+          "type": "integer",
+          "description": "Current unlocked exploration combat stage."
+        },
+        "dayNumber": {
+          "type": "integer",
+          "description": "Elapsed survival day count."
+        },
+        "dayTimeMinutes": {
+          "type": "integer",
+          "description": "In-game clock minutes (0..1439)."
+        },
+        "lastSavedEpochMs": {
+          "type": "integer",
+          "description": "Client epoch milliseconds when save was written, used for offline gain calculation."
+        },
+        "avatarHeroId": {
+          "type": "string",
+          "description": "Selected 3D King/Queen hero portrait ID for commander avatar."
+        },
+        "frameStyle": {
+          "type": "string",
+          "description": "Selected royal commander portrait frame style."
+        },
+        "allianceId": {
+          "type": "string",
+          "description": "Joined alliance document ID or empty string."
+        },
+        "allianceTag": {
+          "type": "string",
+          "description": "Joined alliance 2-5 character tag or empty string."
+        },
+        "dailyGiftLastEpochMs": {
+          "type": "integer",
+          "description": "Last claimed daily royal gift timestamp in epoch ms."
+        },
+        "shopPurchasesCount": {
+          "type": "integer",
+          "description": "Total Royal Shop purchases completed."
+        },
+        "resources": {
+          "type": "object",
+          "description": "Native map of player resource stockpiles."
+        },
+        "buildings": {
+          "type": "array",
+          "description": "List of city building plot state maps."
+        },
+        "survivors": {
+          "type": "array",
+          "description": "List of citizen worker state maps."
+        },
+        "chiefOrders": {
+          "type": "array",
+          "description": "List of active/cooldown Chief Order state maps."
+        },
+        "techLevels": {
+          "type": "array",
+          "description": "List of researched technology progress maps."
+        },
+        "troops": {
+          "type": "object",
+          "description": "Native map of trained infantry, lancer, and marksman counts."
+        },
+        "heroes": {
+          "type": "array",
+          "description": "List of Pharaonic hero instance maps."
+        },
+        "formationHeroIds": {
+          "type": "array",
+          "description": "Ordered list of up to 5 deployed hero IDs."
+        },
+        "quests": {
+          "type": "object",
+          "description": "Native map of quest progress and claimed mission/chest IDs."
+        },
+        "blizzard": {
+          "type": "object",
+          "description": "Native map of Khamaseen Frost Blizzard lifecycle state."
+        },
+        "worldNodes": {
+          "type": "array",
+          "description": "List of active world map resource and monster nodes."
+        },
+        "marches": {
+          "type": "array",
+          "description": "List of active world map expedition marches."
+        },
+        "activeResearch": {
+          "type": "object",
+          "description": "Optional active research timer map (omitted when idle)."
+        },
+        "trainingQueue": {
+          "type": "object",
+          "description": "Optional active troop training queue map (omitted when idle)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp from FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp from FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "language",
+        "soundEnabled",
+        "totalPower",
+        "furnaceLevel",
+        "furnaceOverdrive",
+        "chapter",
+        "explorationStage",
+        "dayNumber",
+        "dayTimeMinutes",
+        "lastSavedEpochMs",
+        "resources",
+        "buildings",
+        "survivors",
+        "chiefOrders",
+        "techLevels",
+        "troops",
+        "heroes",
+        "formationHeroIds",
+        "quests",
+        "blizzard",
+        "worldNodes",
+        "marches",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Public ranking entry for authenticated Pharaoh Chiefs ordered by Total Power.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner UID matching document ID and request.auth.uid."
+        },
+        "chiefName": {
+          "type": "string",
+          "description": "Display name or custom Pharaoh Chief alias (1..40 chars)."
+        },
+        "avatarHeroId": {
+          "type": "string",
+          "description": "Selected 3D commander hero portrait ID."
+        },
+        "allianceTag": {
+          "type": "string",
+          "description": "Optional 2-5 character alliance tag."
+        },
+        "totalPower": {
+          "type": "integer",
+          "description": "Chief total combat and city power score."
+        },
+        "developmentScore": {
+          "type": "integer",
+          "description": "City engineering & development score computed from Solar Obelisk, buildings, gear, and research levels."
+        },
+        "furnaceLevel": {
+          "type": "integer",
+          "description": "Solar Obelisk Furnace level (1..10)."
+        },
+        "chapter": {
+          "type": "integer",
+          "description": "Current guided chapter number."
+        },
+        "explorationStage": {
+          "type": "integer",
+          "description": "Current exploration stage reached."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["AR", "EN"],
+          "description": "Preferred display language."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp from FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last leaderboard sync server timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "chiefName",
+        "totalPower",
+        "furnaceLevel",
+        "chapter",
+        "explorationStage",
+        "language",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WorldCitadel": {
+      "title": "WorldCitadel",
+      "description": "Public map citadel position and stats for a signed-in commander on the living Nile World Map.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "chiefName": { "type": "string" },
+        "avatarHeroId": { "type": "string" },
+        "frameStyle": { "type": "string" },
+        "allianceId": { "type": "string" },
+        "allianceTag": { "type": "string" },
+        "furnaceLevel": { "type": "integer" },
+        "totalPower": { "type": "integer" },
+        "mapX": { "type": "number" },
+        "mapY": { "type": "number" },
+        "shieldActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "chiefName",
+        "avatarHeroId",
+        "frameStyle",
+        "allianceId",
+        "allianceTag",
+        "furnaceLevel",
+        "totalPower",
+        "mapX",
+        "mapY",
+        "shieldActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Alliance": {
+      "title": "Alliance",
+      "description": "Royal Alliance clan on the Nile tundra with member list and total power.",
+      "type": "object",
+      "properties": {
+        "allianceId": { "type": "string" },
+        "name": { "type": "string" },
+        "tag": { "type": "string" },
+        "description": { "type": "string" },
+        "bannerColorHex": { "type": "integer" },
+        "leaderUid": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "memberUids": { "type": "array" },
+        "memberCount": { "type": "integer" },
+        "totalPower": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "allianceId",
+        "name",
+        "tag",
+        "description",
+        "bannerColorHex",
+        "leaderUid",
+        "leaderName",
+        "memberUids",
+        "memberCount",
+        "totalPower",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Real-time chat message in either World Chat or an Alliance's private channel.",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "avatarHeroId": { "type": "string" },
+        "allianceTag": { "type": "string" },
+        "text": { "type": "string" },
+        "sentEpochMs": { "type": "integer" },
+        "memberUids": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "senderUid",
+        "senderName",
+        "avatarHeroId",
+        "allianceTag",
+        "text",
+        "sentEpochMs",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/saves/{saveId}": {
+      "schema": {
+        "$ref": "#/entities/CloudGameSave"
+      },
+      "description": "Per-user isolated cloud save documents owned exclusively by userId."
+    },
+    "/leaderboard/{userId}": {
+      "schema": {
+        "$ref": "#/entities/LeaderboardEntry"
+      },
+      "description": "Public-read, owner-write Chief Leaderboard entries ranked by totalPower."
+    },
+    "/world_citadels/{userId}": {
+      "schema": {
+        "$ref": "#/entities/WorldCitadel"
+      },
+      "description": "Signed-in map citadels on the Nile World Map."
+    },
+    "/alliances/{allianceId}": {
+      "schema": {
+        "$ref": "#/entities/Alliance"
+      },
+      "description": "Cloud alliances on the Nile World Map."
+    },
+    "/world_chat/{msgId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Signed-in global world chat channel."
+    },
+    "/alliances/{allianceId}/messages/{msgId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Alliance-member scoped chat messages."
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Pharaoh Frosthold",
+  "description": "Neo-Pharaonic industrial frost survival strategy game featuring a Solar Obelisk Furnace, frozen Nile world map, Pharaonic heroes, Firebase Cloud Save, and global Chief Leaderboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,363 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Shared Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Validation Helpers ---
+    function isValidCloudGameSave(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.language is string && (data.language == 'AR' || data.language == 'EN') &&
+             data.soundEnabled is bool &&
+             data.totalPower is int && data.totalPower >= 0 && data.totalPower <= 100000000 &&
+             data.furnaceLevel is int && data.furnaceLevel >= 1 && data.furnaceLevel <= 10 &&
+             data.furnaceOverdrive is bool &&
+             data.chapter is int && data.chapter >= 1 && data.chapter <= 50 &&
+             data.explorationStage is int && data.explorationStage >= 1 && data.explorationStage <= 1000 &&
+             data.dayNumber is int && data.dayNumber >= 1 && data.dayNumber <= 1000000 &&
+             data.dayTimeMinutes is int && data.dayTimeMinutes >= 0 && data.dayTimeMinutes < 1440 &&
+             data.lastSavedEpochMs is int && data.lastSavedEpochMs >= 0 &&
+             (!('avatarHeroId' in data) || (data.avatarHeroId is string && data.avatarHeroId.size() >= 1 && data.avatarHeroId.size() <= 40)) &&
+             (!('frameStyle' in data) || (data.frameStyle is string && data.frameStyle.size() >= 1 && data.frameStyle.size() <= 40)) &&
+             (!('allianceId' in data) || (data.allianceId is string && data.allianceId.size() <= 64)) &&
+             (!('allianceTag' in data) || (data.allianceTag is string && data.allianceTag.size() <= 10)) &&
+             (!('dailyGiftLastEpochMs' in data) || (data.dailyGiftLastEpochMs is int && data.dailyGiftLastEpochMs >= 0)) &&
+             (!('shopPurchasesCount' in data) || (data.shopPurchasesCount is int && data.shopPurchasesCount >= 0 && data.shopPurchasesCount <= 100000)) &&
+             data.resources is map &&
+             data.buildings is list && data.buildings.size() <= 20 &&
+             data.survivors is list && data.survivors.size() <= 60 &&
+             data.chiefOrders is list && data.chiefOrders.size() <= 10 &&
+             data.techLevels is list && data.techLevels.size() <= 20 &&
+             data.troops is map &&
+             data.heroes is list && data.heroes.size() <= 30 &&
+             data.formationHeroIds is list && data.formationHeroIds.size() <= 5 &&
+             (data.formationHeroIds.size() == 0 || data.formationHeroIds[0] is string) &&
+             data.quests is map &&
+             data.blizzard is map &&
+             data.worldNodes is list && data.worldNodes.size() <= 30 &&
+             data.marches is list && data.marches.size() <= 10 &&
+             (!('activeResearch' in data) || data.activeResearch is map) &&
+             (!('trainingQueue' in data) || data.trainingQueue is map) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidLeaderboardEntry(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.chiefName is string && data.chiefName.size() >= 1 && data.chiefName.size() <= 40 &&
+             (!('avatarHeroId' in data) || (data.avatarHeroId is string && data.avatarHeroId.size() >= 1 && data.avatarHeroId.size() <= 40)) &&
+             (!('allianceTag' in data) || (data.allianceTag is string && data.allianceTag.size() <= 10)) &&
+             data.totalPower is int && data.totalPower >= 0 && data.totalPower <= 100000000 &&
+             (!('developmentScore' in data) || (data.developmentScore is int && data.developmentScore >= 0 && data.developmentScore <= 100000000)) &&
+             data.furnaceLevel is int && data.furnaceLevel >= 1 && data.furnaceLevel <= 10 &&
+             data.chapter is int && data.chapter >= 1 && data.chapter <= 50 &&
+             data.explorationStage is int && data.explorationStage >= 1 && data.explorationStage <= 1000 &&
+             data.language is string && (data.language == 'AR' || data.language == 'EN') &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidWorldCitadel(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.chiefName is string && data.chiefName.size() >= 1 && data.chiefName.size() <= 40 &&
+             data.avatarHeroId is string && data.avatarHeroId.size() >= 1 && data.avatarHeroId.size() <= 40 &&
+             data.frameStyle is string && data.frameStyle.size() >= 1 && data.frameStyle.size() <= 40 &&
+             data.allianceId is string && data.allianceId.size() <= 64 &&
+             data.allianceTag is string && data.allianceTag.size() <= 10 &&
+             data.furnaceLevel is int && data.furnaceLevel >= 1 && data.furnaceLevel <= 10 &&
+             data.totalPower is int && data.totalPower >= 0 && data.totalPower <= 100000000 &&
+             data.mapX is number && data.mapX >= 0.05 && data.mapX <= 0.95 &&
+             data.mapY is number && data.mapY >= 0.08 && data.mapY <= 0.92 &&
+             data.shieldActive is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAlliance(data, allianceId) {
+      return data.allianceId is string && data.allianceId == allianceId &&
+             data.name is string && data.name.size() >= 2 && data.name.size() <= 32 &&
+             data.tag is string && data.tag.size() >= 2 && data.tag.size() <= 5 &&
+             data.description is string && data.description.size() <= 140 &&
+             data.bannerColorHex is int &&
+             data.leaderUid is string && data.leaderUid.size() >= 1 && data.leaderUid.size() <= 128 &&
+             data.leaderName is string && data.leaderName.size() >= 1 && data.leaderName.size() <= 40 &&
+             data.memberUids is list && data.memberUids.size() >= 1 && data.memberUids.size() <= 50 &&
+             data.memberCount is int && data.memberCount == data.memberUids.size() &&
+             data.totalPower is int && data.totalPower >= 0 && data.totalPower <= 1000000000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidWorldChatMessage(data) {
+      return data.senderUid is string && data.senderUid == request.auth.uid &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 40 &&
+             data.avatarHeroId is string && data.avatarHeroId.size() >= 1 && data.avatarHeroId.size() <= 40 &&
+             data.allianceTag is string && data.allianceTag.size() <= 10 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 280 &&
+             data.sentEpochMs is int && data.sentEpochMs >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidAllianceChatMessage(data) {
+      return data.senderUid is string && data.senderUid == request.auth.uid &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 40 &&
+             data.avatarHeroId is string && data.avatarHeroId.size() >= 1 && data.avatarHeroId.size() <= 40 &&
+             data.allianceTag is string && data.allianceTag.size() <= 10 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 280 &&
+             data.sentEpochMs is int && data.sentEpochMs >= 0 &&
+             data.memberUids is list && data.memberUids.size() >= 1 && data.memberUids.size() <= 50 &&
+             request.auth.uid in data.memberUids &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // --- Collection 1: Per-User Cloud Saves (/users/{userId}/saves/{saveId}) ---
+    match /users/{userId}/saves/{saveId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(saveId);
+      allow list: if isOwner(userId) && isValidId(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(saveId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'language', 'soundEnabled', 'totalPower', 'furnaceLevel',
+                         'furnaceOverdrive', 'chapter', 'explorationStage', 'dayNumber',
+                         'dayTimeMinutes', 'lastSavedEpochMs', 'resources', 'buildings',
+                         'survivors', 'chiefOrders', 'techLevels', 'troops', 'heroes',
+                         'formationHeroIds', 'quests', 'blizzard', 'worldNodes', 'marches',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'language', 'soundEnabled', 'totalPower', 'furnaceLevel',
+                         'furnaceOverdrive', 'chapter', 'explorationStage', 'dayNumber',
+                         'dayTimeMinutes', 'lastSavedEpochMs', 'avatarHeroId', 'frameStyle',
+                         'allianceId', 'allianceTag', 'dailyGiftLastEpochMs', 'shopPurchasesCount',
+                         'resources', 'buildings', 'survivors', 'chiefOrders', 'techLevels',
+                         'troops', 'heroes', 'formationHeroIds', 'quests', 'blizzard',
+                         'worldNodes', 'marches', 'activeResearch', 'trainingQueue',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCloudGameSave(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(saveId) &&
+                       isValidCloudGameSave(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'language', 'soundEnabled', 'totalPower', 'furnaceLevel',
+                         'furnaceOverdrive', 'chapter', 'explorationStage', 'dayNumber',
+                         'dayTimeMinutes', 'lastSavedEpochMs', 'avatarHeroId', 'frameStyle',
+                         'allianceId', 'allianceTag', 'dailyGiftLastEpochMs', 'shopPurchasesCount',
+                         'resources', 'buildings', 'survivors', 'chiefOrders', 'techLevels',
+                         'troops', 'heroes', 'formationHeroIds', 'quests', 'blizzard',
+                         'worldNodes', 'marches', 'activeResearch', 'trainingQueue', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(saveId);
+    }
+
+    // --- Collection 2: Chief Leaderboard (/leaderboard/{userId}) ---
+    match /leaderboard/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && existing().totalPower >= 0;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'chiefName', 'totalPower', 'furnaceLevel',
+                         'chapter', 'explorationStage', 'language', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'chiefName', 'avatarHeroId', 'allianceTag',
+                         'totalPower', 'developmentScore', 'furnaceLevel',
+                         'chapter', 'explorationStage', 'language', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidLeaderboardEntry(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidLeaderboardEntry(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'chiefName', 'avatarHeroId', 'allianceTag',
+                         'totalPower', 'developmentScore', 'furnaceLevel',
+                         'chapter', 'explorationStage', 'language', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // --- Collection 3: Live Nile World Citadels (/world_citadels/{userId}) ---
+    match /world_citadels/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && existing().totalPower >= 0;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'chiefName', 'avatarHeroId', 'frameStyle',
+                         'allianceId', 'allianceTag', 'furnaceLevel', 'totalPower',
+                         'mapX', 'mapY', 'shieldActive', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'chiefName', 'avatarHeroId', 'frameStyle',
+                         'allianceId', 'allianceTag', 'furnaceLevel', 'totalPower',
+                         'mapX', 'mapY', 'shieldActive', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidWorldCitadel(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidWorldCitadel(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'chiefName', 'avatarHeroId', 'frameStyle', 'allianceId',
+                         'allianceTag', 'furnaceLevel', 'totalPower', 'mapX',
+                         'mapY', 'shieldActive', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // --- Collection 4: Royal Alliances (/alliances/{allianceId}) ---
+    match /alliances/{allianceId} {
+      allow get: if isSignedIn() && isValidId(allianceId);
+      allow list: if isSignedIn() && existing().totalPower >= 0;
+
+      allow create: if isSignedIn() &&
+                       isValidId(allianceId) &&
+                       incoming().leaderUid == request.auth.uid &&
+                       request.auth.uid in incoming().memberUids &&
+                       incoming().keys().hasAll([
+                         'allianceId', 'name', 'tag', 'description', 'bannerColorHex',
+                         'leaderUid', 'leaderName', 'memberUids', 'memberCount',
+                         'totalPower', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'allianceId', 'name', 'tag', 'description', 'bannerColorHex',
+                         'leaderUid', 'leaderName', 'memberUids', 'memberCount',
+                         'totalPower', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidAlliance(incoming(), allianceId);
+
+      // Action 1: Member join or leave (non-leader cannot change name/tag/leader)
+      allow update: if isSignedIn() &&
+                       isValidId(allianceId) &&
+                       isValidAlliance(incoming(), allianceId) &&
+                       incoming().allianceId == existing().allianceId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().leaderUid == existing().leaderUid &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'memberUids', 'memberCount', 'totalPower', 'updatedAt'
+                       ]) &&
+                       (
+                         (
+                           !(request.auth.uid in existing().memberUids) &&
+                           (request.auth.uid in incoming().memberUids) &&
+                           incoming().memberUids.size() == existing().memberUids.size() + 1 &&
+                           incoming().memberUids.hasAll(existing().memberUids)
+                         ) ||
+                         (
+                           (request.auth.uid in existing().memberUids) &&
+                           !(request.auth.uid in incoming().memberUids) &&
+                           existing().leaderUid != request.auth.uid &&
+                           incoming().memberUids.size() == existing().memberUids.size() - 1 &&
+                           existing().memberUids.hasAll(incoming().memberUids)
+                         )
+                       );
+
+      // Action 2: Leader management (rename, description, banner, stats sync)
+      allow update: if isSignedIn() &&
+                       isValidId(allianceId) &&
+                       existing().leaderUid == request.auth.uid &&
+                       isValidAlliance(incoming(), allianceId) &&
+                       incoming().allianceId == existing().allianceId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().leaderUid == existing().leaderUid &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'name', 'tag', 'description', 'bannerColorHex',
+                         'leaderName', 'memberUids', 'memberCount', 'totalPower', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() &&
+                       isValidId(allianceId) &&
+                       existing().leaderUid == request.auth.uid &&
+                       existing().memberUids.size() <= 1;
+
+      // --- Collection 4b: Alliance Chat Messages (/alliances/{allianceId}/messages/{msgId}) ---
+      match /messages/{msgId} {
+        allow get: if isSignedIn() &&
+                      isValidId(allianceId) &&
+                      isValidId(msgId) &&
+                      request.auth.uid in existing().memberUids;
+        allow list: if isSignedIn() &&
+                       isValidId(allianceId) &&
+                       request.auth.uid in existing().memberUids;
+
+        allow create: if isSignedIn() &&
+                         isValidId(allianceId) &&
+                         isValidId(msgId) &&
+                         exists(/databases/$(database)/documents/alliances/$(allianceId)) &&
+                         request.auth.uid in get(/databases/$(database)/documents/alliances/$(allianceId)).data.memberUids &&
+                         incoming().keys().hasAll([
+                           'senderUid', 'senderName', 'avatarHeroId', 'allianceTag',
+                           'text', 'sentEpochMs', 'memberUids', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'senderUid', 'senderName', 'avatarHeroId', 'allianceTag',
+                           'text', 'sentEpochMs', 'memberUids', 'createdAt'
+                         ]) &&
+                         isValidAllianceChatMessage(incoming());
+
+        allow update, delete: if false;
+      }
+    }
+
+    // --- Collection 5: Global World Chat (/world_chat/{msgId}) ---
+    match /world_chat/{msgId} {
+      allow get: if isSignedIn() && isValidId(msgId);
+      allow list: if isSignedIn() && existing().sentEpochMs >= 0;
+
+      allow create: if isSignedIn() &&
+                       isValidId(msgId) &&
+                       incoming().keys().hasAll([
+                         'senderUid', 'senderName', 'avatarHeroId', 'allianceTag',
+                         'text', 'sentEpochMs', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'senderUid', 'senderName', 'avatarHeroId', 'allianceTag',
+                         'text', 'sentEpochMs', 'createdAt'
+                       ]) &&
+                       isValidWorldChatMessage(incoming());
+
+      allow update, delete: if false;
+    }
+  }
+}
